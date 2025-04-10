@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Color QR - @@FILE_NAME@@</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+	</head>
+	<body class="flex flex-col items-center justify-center h-screen m-0 p-0">
+		<canvas id="colorQrCanvas" class="border border-gray-300"></canvas>
+		<div id="chunkInfo" class="mt-4 text-lg font-semibold"></div>
+
+		<script>
+			// We'll dynamically replace these placeholders on the server side:
+			const fileName = '@@FILE_NAME@@';
+			const chunks = @@CHUNKS@@;
+
+			let index = 0;
+			let autoAdvanceTimer = null;
+			const canvas = document.getElementById('colorQrCanvas');
+			const chunkInfo = document.getElementById('chunkInfo');
+
+
+			function renderColorQR() {
+			  const payload = `${index}||${chunks.length}||${chunks[index]}`
+			  // Clear canvas
+			  const ctx = canvas.getContext('2d');
+			  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+			  // Create color QR
+			  QRCode.toCanvas(canvas, payload, {
+			    errorCorrectionLevel: 'H',
+			    scale: 7,
+			    margin: 1,
+			    color: {
+			      dark: "#000000",  //
+			      light: "#ffffff"  // white background
+			    }
+			  }, (err) => {
+			    if (err) console.error("QR generation error:", err);
+			  });
+
+			  chunkInfo.textContent = `Chunk ${index+1} / ${chunks.length}`;
+			}
+
+			function nextChunk() {
+			  index = (index + 1) % chunks.length;
+			  renderColorQR();
+			}
+
+			function prevChunk() {
+			  index = (index - 1 + chunks.length) % chunks.length;
+			  renderColorQR();
+			}
+
+			document.addEventListener('keydown', (e) => {
+			  if (e.key === 'ArrowUp') {
+			    startAutoAdvance();
+			  } else if (e.key === 'ArrowDown') {
+			    pauseAutoAdvance();
+			  } else if (e.key === 'ArrowLeft') {
+			    pauseAutoAdvance();
+			    prevChunk();
+			  } else if (e.key === 'ArrowRight') {
+			    pauseAutoAdvance();
+			    nextChunk();
+			  }
+			});
+
+			function startAutoAdvance() {
+			  pauseAutoAdvance();
+			  autoAdvanceTimer = setInterval(() => {
+			    nextChunk();
+			  }, 1000);
+			}
+
+			function pauseAutoAdvance() {
+			  if (autoAdvanceTimer) {
+			    clearInterval(autoAdvanceTimer);
+			    autoAdvanceTimer = null;
+			  }
+			}
+
+			// Initial render
+			renderColorQR();
+		</script>
+	</body>
+</html>
